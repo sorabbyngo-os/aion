@@ -2,136 +2,155 @@
 
 **AI runtime and control plane for Sorabbyngo OS**
 
-AION is not an AI model.  
-It is the system layer that turns intent into safe, mediated action.
+> Models reason.  
+> AION decides, routes, and mediates.  
+> The system never hands the keys to a vendor or a weight file.
 
-Models reason.  
-AION decides, routes, remembers enough to continue, and executes through the rest of the OS.
+AION is not an AI model.  
+It is the layer that turns **intent into safe, observable action** —  
+whether that intent comes from Chameha, Vanta’s UI, or another node on Byngonet.
 
 ---
 
-## Role
+## Vision
+
+Intelligence in an OS should feel native: always available, never mandatory, never opaque.
+
+AION exists so that:
+
+- Local models, containerized servers, and cloud APIs look the **same** from the desktop’s point of view  
+- Context can move when the user switches model or machine  
+- Every effect on the system passes through **one mediated door**  
+- The compositor and the user stay in control when models are wrong, slow, or offline  
 
 ```text
-User
-  ↓
-Chameha / Vanta          (conversation & direct UI)
-  ↓ intent
-AION                     (this component)
-  ├── select backend (local model / API model / remote node)
-  ├── assemble context
-  ├── validate tool calls
-  └── mediate actions
-  ↓
-ObjectSpace & system
-AION is responsible for:
-Receiving intent (from Chameha, Vanta, or other clients)
+Intent (Chameha / Vanta / remote)
+        ↓
+     AION
+        ├── select backend (local | API | remote AION)
+        ├── assemble context (via memory service)
+        ├── plan / tool calls
+        ├── authorize & mediate
+        └── execute through ObjectSpace / typed actions
+        ↓
+   Observable result → Vanta / speech
+Without AION, “AI OS” collapses into either a chatbot or root-level scripts.
+With AION, intelligence is infrastructure.
+Responsibilities
+AION owns:
+Receiving structured intent
 Planning and decomposing tasks
-Choosing which model backend to use
-Assembling the right context for that backend
-Validating and authorizing tool calls
-Executing actions only through mediated APIs (ObjectSpace / typed actions)
-Coordinating with other nodes when needed (via Byngonet)
-Keeping actions observable, permissioned, and undoable where possible
-AION is not responsible for:
-Being the voice or personality (that is Chameha)
-Owning the full long-term memory database (Context/Memory service)
-Replacing the mesh transport (that is Byngonet)
-Supervising every OS process (that is systemd + Sentinel)
-Hard-coding any particular model vendor
-Design principles
-Runtime, not model — Models are backends. They can be replaced as better ones appear.
-One door for actions — GUI, voice, and automation all go through the same mediation path.
-Direct path still works — The desktop remains usable if AION is limited or offline.
-Local-first — Core planning and local backends work without the network.
-Least privilege — Models never receive raw system control. They propose; AION mediates.
-Multi-device capable — AION can target another node through Byngonet without the user managing IPs.
-Stay a control plane — Do not absorb voice pipelines, full memory storage, or init-system duties.
-Backends
-AION treats all intelligence providers uniformly:
-Backend type
-Examples
-How AION uses it
-Local system models
-Pre-installed or user-installed local weights
-Default offline path
-Containerized servers
-Ollama, vLLM, etc.
-Registered HTTP/API backends
-Cloud APIs
-User-supplied API keys
-Opt-in, privacy-filtered
-Remote AION nodes
-Other machines on Byngonet
-For continuation / offload
-Registration is capability-based. AION selects backends by task needs, policy, and availability — not by hard-coded vendor logic.
-Context and memory
-AION needs rich context. It should not become the sole memory store.
-Working context — assembled per request for the chosen backend
-Project / chat memory — owned by a Context/Memory service that AION queries and updates
-Context switching — AION decides when to switch; the memory service performs the swap cleanly
-This keeps AION focused while still supporting long projects and multi-device continuation.
-Safety and mediation
-Every model output that would change the system passes through AION:
-Parse structured tool calls / plans
-Check permissions and policy
-Confirm with the user when required
-Execute via ObjectSpace / typed action API
-Log and support undo where possible
-No backend — local or cloud — receives direct filesystem, device, or kernel control.
-Relationship to other components
-Component
-Relationship
+Choosing backends by policy, capability, and availability
+Assembling working context for the chosen backend
+Validating tool calls and permissions
+Mediating execution (ObjectSpace / action API)
+Coordinating multi-device handoff (with Byngonet)
+Emitting results suitable for UI and Chameha
+AION does not own:
+Concern
+Owner
+Voice personality & STT/TTS
 Chameha
-Sends user intent; receives natural-language results
+Pixels, seats, tiling
 Vanta
-UI and spatial surface; can also send direct actions
-ObjectSpace
-World model and execution target for mediated actions
+Long-term memory store
+Context / Memory service
+Mesh transport
 Byngonet
-Transport and discovery for multi-device AION coordination
-Sentinel
-Monitors AION health and recovery
-CML (if retained)
-Optional safety/privacy filter on outbound cloud calls
-What changed from earlier research
-Older work embedded planning inside Chameha and used Byngox as a multi-agent cognitive core.
-Current direction:
-AION is the standalone runtime / control plane
-Byngox is superseded as the primary intelligence backend
-Models are user-choosable and replaceable
-Chameha is conversation and personality only
-Earlier prototypes remain useful reference, not the final architecture.
-Current status
-Design and realignment phase.
-Goals for the near term:
-Stable intent → plan → mediate → act pipeline
-Uniform backend registration (local + API)
-Clean boundary with Chameha and ObjectSpace
-Basic multi-device handoff via Byngonet
-Strong confinement on Linux foundations
-Non-goals
-Becoming a general multi-agent product platform
-Replacing systemd or the desktop compositor
-Locking users to one model vendor
-Requiring cloud connectivity for basic use
-Related repositories
-Repository
+Process supervision of the whole OS
+systemd + Sentinel
+A particular model vendor
+User / packager
+Stay a control plane. Refuse to become systemd-with-LLM.
+Backends
+All intelligence providers register uniformly:
+Type
+Examples
+Role
+Local
+System or user-installed weights
+Default offline path
+Containerized
+Ollama, vLLM, …
+HTTP/API backends under policy
+Cloud
+User-supplied API keys
+Opt-in; filter sensitive context
+Remote node
+Another machine’s AION via Byngonet
+Continuation / offload
+Registration is capability-based.
+Selection is policy-based.
+No backend receives raw root, raw device control, or silent filesystem write.
+Context and continuity
+Working context     → assembled per request for the active backend
+Project / chat memory → owned by a memory service; AION reads/writes
+Context switch      → AION decides *when*; memory service performs *how*
+Model switch        → new backend receives portable task/state summary, not a vendor lock-in blob
+A developer can start with a local model, later attach a cloud subscription, and continue the same project state — because state lives in the system, not inside one provider’s session.
+Safety model
+Model output
+    → parse structured tools / plan
+    → permission & policy check
+    → user confirm when required
+    → execute via ObjectSpace / typed actions
+    → log · undo surface where possible
+Least privilege.
+One door.
+Direct path still works if AION is degraded.
+Optional CML-style filters may sit on outbound cloud calls (privacy, regional policy). They do not replace mediation.
+Technical direction
+Area
+Approach
+Language
+Rust preferred for the runtime core
+IPC
+Stable contracts with Vanta (vanta-intent) and ObjectSpace
+Backends
+HTTP/gRPC/OpenAI-compatible where practical; local process adapters
+Isolation
+systemd units, cgroups, containers, SELinux types (Fedora lineage)
+Deployment
+Service on the immutable base; not in-kernel
+Offline
+Local backend path is first-class
+Non-goals: multi-agent product platform, replacing the compositor, mandatory cloud, hard-coded single vendor.
+Relation to older research
+Earlier idea
+Current
+Planning inside Chameha
+AION
+Byngox as multi-agent cognitive core
+Superseded — models are pluggable backends
+Intelligence as a branded closed model
+Rejected — user-chosen models
+Status
+Design and early implementation phase.
+Near-term goals:
+Intent → plan → mediate → act pipeline
+Uniform backend registration
+Clean boundaries with Chameha and Vanta
+Basic multi-device handoff hooks
+Strong confinement on the Fedora bootc foundation
+Related
+Project
 Role
 vanta
-Spatial desktop
+Desktop; sends intent, shows results
 chameha
-Voice & personality
+Voice and personality
 objectspace
-Objects & spaces
+Execution world model
 byngonet
-Inter-node communication
-sorabbyngo-os
-Main OS
+Inter-node transport
+sentinel
+Health of AION process
+fedora-base
+OS substrate
 cognitive-runtime
-Earlier related research
+Historical precursor
 License
-To be decided.
-All rights reserved until a license is published.
-Sorabbyngo
-The Rhythm of Digital Life
+To be decided. All rights reserved until a license is published.
+Sorabbyngo · The Rhythm of Digital Life
+Models come and go.
+The path from intent to effect must remain yours.
