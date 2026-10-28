@@ -1,0 +1,19 @@
+[Unit]
+Description=AION control plane
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/aiond
+Environment=AION_SOCKET=/run/aion/aion.sock
+RuntimeDirectory=aion
+RuntimeDirectoryMode=0750
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
